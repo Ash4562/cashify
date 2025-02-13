@@ -5,6 +5,9 @@ const User = require('../../models/userModel/User');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 
+
+
+
 const otpResendLimiter = async (req, res, next) => {
     const { mobile } = req.body;
     const otpData = await getOtp(mobile);
@@ -21,6 +24,18 @@ const generateAndSendOtp = async (mobile, name) => {
     await generateOtp(mobile, otp);
     await sendOtp(mobile, otp);
 };
+
+exports.logoutUser = asyncHandler(async (req, res) => {
+    res.cookie("token", "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        expires: new Date(0), // Expire immediately
+    });
+
+    res.status(200).json({ message: "User logged out successfully." });
+});
+
 
 exports.registerOrLogin = [
     otpResendLimiter,
@@ -100,6 +115,29 @@ exports.verifyOtpForUser = asyncHandler(async (req, res) => {
         user: { name: user.name, mobile: user.mobile },
     });
 });
+
+exports.resendOtp = [
+    otpResendLimiter,
+    asyncHandler(async (req, res) => {
+        const { mobile } = req.body;
+
+        if (!mobile) {
+            return res.status(400).json({ message: 'Mobile number is required.' });
+        }
+
+        const formattedMobile = mobile.startsWith('+91') ? mobile : `+91${mobile.replace(/^0?/, '')}`;
+        const user = await User.findOne({ mobile: formattedMobile });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found. Please register first.' });
+        }
+
+        await generateAndSendOtp(formattedMobile);
+        res.status(200).json({ message: 'New OTP sent successfully.' });
+    }),
+];
+
+
 
 exports.getUser = asyncHandler(async (req, res) => {
     const user = await User.findById(req.userId);

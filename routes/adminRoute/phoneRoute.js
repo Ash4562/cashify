@@ -13,3 +13,5 @@ router
     .delete('/delete-phone', protectedAdmin, addPhonesController.deletePhone);
 
 module.exports = router;
+// /api/v1/phone/get-all-phones   
+// /api/v1/phone/getPhoneByBrand/:brand

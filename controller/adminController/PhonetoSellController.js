@@ -37,17 +37,30 @@ exports.getAllDevices = async (req, res) => {
 
 
 exports.createDevice = async (req, res) => {
-    const { userId, deviceName, imeiNumber, image, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories } = req.body;
-    const basePrice = 20000;
-
-    const calculatedPrice = calculatePrice(basePrice, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories);
-
     try {
+        console.log("hekkkooo");
+        const { userId, deviceName, imeiNumber, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories } = req.body;
+        const basePrice = 20000;
+        
+        let imageUrls = [];
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ message: "No images uploaded!" });
+        }
+
+        // 🔹 Upload each image to Cloudinary
+        for (const file of req.files) {
+            const result = await cloudinary.uploader.upload(file.path);
+            imageUrls.push(result.secure_url);
+        }
+
+        const calculatedPrice = calculatePrice(basePrice, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories);
+
         const newDevice = new PhonetoSell({
             userId,
             deviceName,
             imeiNumber,
-            image,
+            images: imageUrls,
             storageCapacity,
             physicalCondition,
             chargingPortWorking,
@@ -56,61 +69,13 @@ exports.createDevice = async (req, res) => {
         });
 
         await newDevice.save();
-        res.status(201).json({ message: 'Device created successfully', device: newDevice });
+        res.status(201).json({ message: "Device created successfully", device: newDevice });
+
     } catch (err) {
-        res.status(500).json({ message: 'Error creating device', error: err });
+        console.error("🔥 Error:", err);
+        res.status(500).json({ message: "Error creating device", error: err.message });
     }
 };
-
-
-
-// exports.createDevice = async (req, res) => {
-//     const { userId, deviceName, imeiNumber, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories } = req.body;
-//     const basePrice = 20000;
-
-//     const calculatedPrice = calculatePrice(basePrice, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories);
-
-//     try {
-//         // Upload images to Cloudinary
-//         let imageUrls = [];
-//         if (req.files && req.files.length > 0) {
-//             for (const file of req.files) {
-//                 const cloudinaryResponse = await cloudinary.uploader.upload(file.path, {
-//                     folder: 'phone_images',
-//                     use_filename: true,
-//                     unique_filename: false,
-//                 });
-
-//                 // Store the secure URL in the imageUrls array
-//                 imageUrls.push(cloudinaryResponse.secure_url);
-
-//                 // If you still need to store it in uploadedFiles object
-//                 uploadedFiles[file.fieldname] = cloudinaryResponse.secure_url;
-//             }
-//         }
-//         console.log(imageUrls);
-
-//         const newDevice = new PhonetoSell({
-//             userId,
-//             deviceName,
-//             imeiNumber,
-//             image: imageUrls,
-//             storageCapacity,
-//             physicalCondition,
-//             chargingPortWorking,
-//             originalAccessories,
-//             calculatedPrice,
-//         });
-
-//         await newDevice.save();
-//         res.status(201).json({ message: 'Device created successfully', device: newDevice });
-//     } catch (err) {
-//         res.status(500).json({ message: 'Error creating device', error: err });
-//     }
-// };
-
-
-
 // Get a device by ID
 exports.getDeviceById = async (req, res) => {
     const { id } = req.params;
@@ -154,37 +119,7 @@ exports.deleteDevice = async (req, res) => {
     }
 };
 
-// exports.updateDevice = async (req, res) => {
-//     const { id } = req.params;
-//     const { deviceName, imeiNumber, image, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories } = req.body;
-//     const basePrice = 20000;
 
-//     const calculatedPrice = calculatePrice(basePrice, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories);
-
-//     try {
-//         const updatedDevice = await PhonetoSell.findByIdAndUpdate(
-//             id,
-//             {
-//                 deviceName,
-//                 imeiNumber,
-//                 image,
-//                 storageCapacity,
-//                 physicalCondition,
-//                 chargingPortWorking,
-//                 originalAccessories,
-//                 calculatedPrice,
-//             },
-//             { new: true } // Return the updated document
-//         );
-
-//         if (!updatedDevice) {
-//             return res.status(404).json({ message: 'Device not found' });
-//         }
-//         res.status(200).json({ message: 'Device updated successfully', device: updatedDevice });
-//     } catch (err) {
-//         res.status(500).json({ message: 'Error updating device', error: err });
-//     }
-// };
 exports.updateDevice = async (req, res) => {
     const { id } = req.params;
     const { deviceName, imeiNumber, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories, PartnerId } = req.body;
@@ -195,15 +130,7 @@ exports.updateDevice = async (req, res) => {
     try {
 
 
-        // let uploadedFiles = {};
-        // if (req.files && req.files.length > 0) {
-        //     for (const file of req.files) {
-        //         const cloudinaryResponse = await cloudinary.uploader.upload(file.path);
 
-        //         uploadedFiles[file.fieldname] = cloudinaryResponse.secure_url;
-        //     }
-        // }
-        // Upload new images to Cloudinary if any
         const imageUrls = [];
         if (req.files && req.files.length > 0) {
             for (const file of req.files) {

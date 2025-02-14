@@ -112,7 +112,7 @@ exports.verifyOtpForUser = asyncHandler(async (req, res) => {
     res.status(200).json({
         message: 'OTP verified successfully. Registration complete.',
         token,
-        user: { name: user.name, mobile: user.mobile },
+        user: { name: user.name, mobile: user.mobile ,userId: user._id},
     });
 });
 

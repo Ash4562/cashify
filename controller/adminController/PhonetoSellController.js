@@ -1,7 +1,9 @@
-const cloudinary = require('../../config/cloudinary');
 const PhonetoSell = require("../../models/adminModel/PhonetoSell");
+const cloudinary = require("../../config/cloudinary");
 
-const calculatePrice = (basePrice, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories) => {
+const calculatePrice = (basePrice, storageCapacity,workProperly,
+     physicalCondition,touchScreen,batteryHealth,cameras,speakerMicrophone,
+     originalBox,underWarranty,repairedRefurbished, chargingPortWorking, originalAccessories) => {
     let price = basePrice;
 
 
@@ -21,8 +23,72 @@ const calculatePrice = (basePrice, storageCapacity, physicalCondition, chargingP
     if (originalAccessories === 'Some') price *= 0.98;
     else if (originalAccessories === 'None') price *= 0.96;
 
+    if (batteryHealth === 'Average') price *= 0.98;
+    else if (batteryHealth === 'bad') price *= 0.96;
+
+    
+    if (cameras === 'Back issues') price *= 0.98;
+    else if (cameras === 'front issues') price *= 0.98;
+
+
+    if (speakerMicrophone === 'Speaker issues') price *= 0.98;
+    else if (speakerMicrophone === 'Microphone issues') price *= 0.98;
+
+
+    if (repairedRefurbished === 'motherboard') price *= 0.98;
+    else if (repairedRefurbished === 'Screen Battery') price *= 0.98;
+    
+
+    
+    if (touchScreen === 'No') price *= 0.98;
+    if (workProperly === 'No') price *= 0.98;
+    if (originalBox === 'No') price *= 0.98;
+    if (underWarranty === 'No') price *= 0.98;
+
+
     return price;
 };
+
+exports.createDevice = async (req, res) => {
+    try {
+        console.log("🖼 Uploaded Files:", req.files);  // Debugging uploaded files
+
+        const { userId, deviceName, imeiNumber,storageCapacity,workProperly,
+     physicalCondition,touchScreen,batteryHealth,cameras,speakerMicrophone,
+     originalBox,underWarranty,repairedRefurbished, chargingPortWorking, originalAccessories } = req.body;
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ message: "No images uploaded!" });
+        }
+
+        // Get Cloudinary image URLs
+        const imageUrls = req.files.map(file => file.path);
+        console.log("✅ Uploaded Image URLs:", imageUrls); // Debugging
+
+        const calculatedPrice = calculatePrice(20000,storageCapacity,workProperly,
+     physicalCondition,touchScreen,batteryHealth,cameras,speakerMicrophone,
+     originalBox,underWarranty,repairedRefurbished, chargingPortWorking, originalAccessories);
+
+        const newDevice = new PhonetoSell({
+            userId,
+            deviceName,
+            imeiNumber,
+            images: imageUrls, // Save multiple images
+            storageCapacity,workProperly,
+            physicalCondition,touchScreen,batteryHealth,cameras,speakerMicrophone,
+            originalBox,underWarranty,repairedRefurbished, chargingPortWorking, originalAccessories,
+            calculatedPrice,
+        });
+
+        await newDevice.save();
+        res.status(201).json({ message: "Device created successfully", device: newDevice });
+
+    } catch (err) {
+        console.error("🔥 Error in createDevice:", err);
+        res.status(500).json({ message: "Error creating device", error: err.message });
+    }
+};
+
 exports.getAllDevices = async (req, res) => {
     try {
         const devices = await PhonetoSell.find();
@@ -35,47 +101,6 @@ exports.getAllDevices = async (req, res) => {
     }
 };
 
-
-exports.createDevice = async (req, res) => {
-    try {
-        console.log("hekkkooo");
-        const { userId, deviceName, imeiNumber, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories } = req.body;
-        const basePrice = 20000;
-        
-        let imageUrls = [];
-
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ message: "No images uploaded!" });
-        }
-
-        // 🔹 Upload each image to Cloudinary
-        for (const file of req.files) {
-            const result = await cloudinary.uploader.upload(file.path);
-            imageUrls.push(result.secure_url);
-        }
-
-        const calculatedPrice = calculatePrice(basePrice, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories);
-
-        const newDevice = new PhonetoSell({
-            userId,
-            deviceName,
-            imeiNumber,
-            images: imageUrls,
-            storageCapacity,
-            physicalCondition,
-            chargingPortWorking,
-            originalAccessories,
-            calculatedPrice,
-        });
-
-        await newDevice.save();
-        res.status(201).json({ message: "Device created successfully", device: newDevice });
-
-    } catch (err) {
-        console.error("🔥 Error:", err);
-        res.status(500).json({ message: "Error creating device", error: err.message });
-    }
-};
 // Get a device by ID
 exports.getDeviceById = async (req, res) => {
     const { id } = req.params;
@@ -122,50 +147,112 @@ exports.deleteDevice = async (req, res) => {
 
 exports.updateDevice = async (req, res) => {
     const { id } = req.params;
-    const { deviceName, imeiNumber, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories, PartnerId } = req.body;
+    const {
+        deviceName,
+        imeiNumber,
+        storageCapacity,
+        workProperly,
+        physicalCondition,
+        touchScreen,
+        batteryHealth,
+        cameras,
+        speakerMicrophone,
+        originalBox,
+        underWarranty,
+        repairedRefurbished,
+        chargingPortWorking,
+        originalAccessories,
+        PartnerId,
+    } = req.body;
+
     const basePrice = 20000;
 
-    const calculatedPrice = calculatePrice(basePrice, storageCapacity, physicalCondition, chargingPortWorking, originalAccessories);
+    // Calculate the updated price
+    const calculatedPrice = calculatePrice(
+        basePrice,
+        storageCapacity,
+        workProperly,
+        physicalCondition,
+        touchScreen,
+        batteryHealth,
+        cameras,
+        speakerMicrophone,
+        originalBox,
+        underWarranty,
+        repairedRefurbished,
+        chargingPortWorking,
+        originalAccessories
+    );
 
     try {
-
-
-
-        const imageUrls = [];
-        if (req.files && req.files.length > 0) {
-            for (const file of req.files) {
-                const result = await cloudinary.uploader.upload(file.path);
-                uploadedFiles[file.fieldname] = cloudinaryResponse.secure_url;
-            }
+        const existingDevice = await PhonetoSell.findById(id);
+        if (!existingDevice) {
+            return res.status(404).json({ message: "Device not found" });
         }
 
+        let imageUrls = existingDevice.images || []; // Keep existing images
+
+        // Upload new images to Cloudinary if provided
+        if (req.files && req.files.length > 0) {
+            const uploadedImages = await Promise.all(
+                req.files.map(async (file) => {
+                    const result = await cloudinary.uploader.upload(file.path);
+                    return result.secure_url;
+                })
+            );
+
+            imageUrls = [...imageUrls, ...uploadedImages]; // Combine old and new images
+        }
+
+        // Prepare the update data
         const updateData = {
             deviceName,
             imeiNumber,
             storageCapacity,
+            workProperly,
             physicalCondition,
+            touchScreen,
+            batteryHealth,
+            cameras,
+            speakerMicrophone,
+            originalBox,
+            underWarranty,
+            repairedRefurbished,
             chargingPortWorking,
             originalAccessories,
-            calculatedPrice,
             PartnerId,
+            calculatedPrice, // Include the updated price
+            images: imageUrls, // Include updated images
         };
 
-        if (imageUrls.length > 0) {
-            updateData.image = imageUrls;
-        }
+        // Log the update data for debugging
+        console.log("Update Data:", updateData);
 
+        // Update the device in the database
         const updatedDevice = await PhonetoSell.findByIdAndUpdate(
             id,
             updateData,
-            { new: true } // Return the updated document
+            { new: true, runValidators: true } // Return the updated document and run validators
         );
 
         if (!updatedDevice) {
-            return res.status(404).json({ message: 'Device not found' });
+            return res.status(404).json({ message: "Device not found" });
         }
-        res.status(200).json({ message: 'Device updated successfully', device: updatedDevice });
+
+        // Log the updated device for debugging
+        console.log("Updated Device:", updatedDevice);
+
+        res.status(200).json({ message: "Device updated successfully", device: updatedDevice });
+
     } catch (err) {
-        res.status(500).json({ message: 'Error updating device', error: err });
+        console.error("🔥 Error in updateDevice:", err);
+
+        // Log validation errors if any
+        if (err.name === "ValidationError") {
+            console.error("Validation Errors:", err.errors);
+        }
+
+        res.status(500).json({ message: "Error updating device", error: err.message });
     }
 };
 

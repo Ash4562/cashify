@@ -1,10 +1,8 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
-const dotenv = require("dotenv");
-const fileUpload = require('express-fileupload');
 const cors = require("cors");
-dotenv.config();
+require("dotenv").config({ path: "./.env" })
 
 const app = express();
 
@@ -14,7 +12,6 @@ app.use(cors({
     origin: true,
     credentials: true,
 }));
-app.use(fileUpload({ useTempFiles: true }));
 
 app.use("/api/v1/userPhonetoSell", require("./routes/adminRoute/userPhoneyoSell"));
 app.use("/api/v1/adminAuth", require("./routes/adminRoute/adminAuthRoute"));

@@ -181,7 +181,7 @@ exports.updateDevice = async (req, res) => {
         underWarranty,
         repairedRefurbished,
         chargingPortWorking,
-        
+
         originalAccessories
     );
 

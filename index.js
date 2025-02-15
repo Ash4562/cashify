@@ -30,7 +30,7 @@ app.use("*", (req, res) => {
 
 app.use((err, req, res, next) => {
     console.error(err);
-    return res.status(500).json({ message: err.message || "Something went wrongs" });
+    return res.status(500).json({ message: err || "Something went wrongs" });
 });
 
 mongoose.connection.once("open", () => {

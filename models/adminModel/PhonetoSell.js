@@ -22,7 +22,7 @@ const PhonetoSellSchema = new mongoose.Schema({
     },
     images: {
         type: [String],
-        required: true,
+       
     },
     storageCapacity: {
         type: String,
